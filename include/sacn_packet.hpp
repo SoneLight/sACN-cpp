@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <string>
+#include <dmx_universe_data.hpp>
 
 #ifdef __GNUC__
 #define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
@@ -14,7 +15,7 @@
 
 /* E1.31 Public Constants */
 const uint16_t E131_DEFAULT_PORT = 5568;
-const uint8_t E131_DEFAULT_PRIORITY = 0x64;
+const uint8_t E131_DEFAULT_PRIORITY = 100;
 
 /* E1.31 Private Constants */
 const uint16_t _E131_PREAMBLE_SIZE = 0x0010;
@@ -116,6 +117,11 @@ class sACNPacket
             return sizeof(sacn_packet_struct);
         }
 
+        uint16_t numDMXSlots() const
+        {
+            return ntohs(packedPacket->dmp.prop_val_cnt)-1;
+        }
+
         sacn_packet_struct* getPackedPacket() 
         { 
             return packedPacket; 
@@ -126,19 +132,85 @@ class sACNPacket
             return packedPacket; 
         }
 
-        uint8_t dmx(size_t channel)
+        uint8_t dmx(uint16_t channel) const
         {
-            return packedPacket->dmp.prop_val[channel-1];
+            return packedPacket->dmp.prop_val[channel];
         }
 
-        std::string sourceName()
+        void setDMX(uint16_t channel, uint8_t value)
         {
-            return std::string((char*)&packedPacket->frame.source_name);
+            packedPacket->dmp.prop_val[channel] = value;
         }
 
-        int universe()
+        void getDMXDataCopy(DMXUniverseData& result) const
+        {
+            result.read(&packedPacket->dmp.prop_val[1], numDMXSlots());            
+        }
+
+        void setDMXDataCopy(DMXUniverseData& data)
+        {
+            data.write(&packedPacket->dmp.prop_val[1], numDMXSlots());
+        }
+
+        std::string sourceName() const
+        {
+            return std::string((char*)packedPacket->frame.source_name);
+        }
+
+        void setSourceName(const std::string& name)
+        {
+            if(name.size() >= 63)
+            {
+                throw std::invalid_argument("Source name too long! Maximum 63 chars.");
+            }
+            strcpy((char*)packedPacket->frame.source_name, name.c_str());            
+        }
+
+        uint16_t universe() const
         {
             return ntohs(packedPacket->frame.universe);
+        }
+
+        void setUniverse(uint16_t universe)
+        {
+            if(universe > 63999)
+            {
+                throw std::invalid_argument("Invalid universe number, only universes between 1 and 63999 are allowed.");
+            }
+            packedPacket->frame.universe = htons(universe);
+        }
+
+        uint8_t priority() const
+        {
+            return packedPacket->frame.priority;
+        } 
+
+        void setPriority(uint8_t priority)
+        {
+            packedPacket->frame.priority = priority;
+        } 
+
+        bool valid() const
+        {
+            if (ntohs(packedPacket->root.preamble_size) != _E131_PREAMBLE_SIZE)
+                return false;
+            if (ntohs(packedPacket->root.postamble_size) != _E131_POSTAMBLE_SIZE)
+                return false;
+            if (memcmp(packedPacket->root.acn_pid, _E131_ACN_PID, sizeof packedPacket->root.acn_pid) != 0)
+                return false;
+            if (ntohl(packedPacket->root.vector) != _E131_ROOT_VECTOR)
+                return false;
+            if (ntohl(packedPacket->frame.vector) != _E131_FRAME_VECTOR)
+                return false;
+            if (packedPacket->dmp.vector != _E131_DMP_VECTOR)
+                return false;
+            if (packedPacket->dmp.type != _E131_DMP_TYPE)
+                return false;
+            if (htons(packedPacket->dmp.first_addr) != _E131_DMP_FIRST_ADDR)
+                return false;
+            if (htons(packedPacket->dmp.addr_inc) != _E131_DMP_ADDR_INC)
+                return false;
+            return true;
         }
 
     private:

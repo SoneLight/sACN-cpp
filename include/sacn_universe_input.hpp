@@ -1,19 +1,20 @@
 #pragma once
 #include <stdint.h>
 #include <asio_standalone_or_boost.hpp>
-#include <sacn_socket.hpp>
+#include <sacn_receiver_socket.hpp>
+#include <dmx_universe_data.hpp>
 #include <atomic>
 #include <thread>
 #include <memory>
 #include <chrono>
+#include <array>
 
-class sACNInput {
+class sACNUniverseInput {
 
 public:
-    sACNInput(uint16_t universe, std::string networkInterface, std::shared_ptr<asio::io_context> io_context)
+    sACNUniverseInput(uint16_t universe, std::string networkInterface, std::shared_ptr<asio::io_context> io_context)
     {
-        m_socket = std::make_unique<sACNSocket>(networkInterface, io_context);
-        m_socket->prepareToReceive(universe);
+        m_socket = std::make_unique<sACNReceiverSocket>(networkInterface, io_context);
     }
 
     void start()
@@ -40,6 +41,10 @@ public:
         return "None";
     }
 
+    const DMXUniverseData& dmx() const
+    {
+        return m_universeValues;
+    }
 
 
 private:
@@ -51,20 +56,17 @@ private:
             while(m_socket->packetAvailable())
             {
                 m_socket->receivePacket(m_tempPacket);
-                handleNewPacket();
+                if(m_tempPacket.valid())
+                    m_tempPacket.getDMXDataCopy(m_universeValues);
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
 
-    void handleNewPacket()
-    {
-        //TODO
-    }
-
     uint16_t m_universe;
     std::thread m_thread;
     std::atomic_bool m_running;
-    std::unique_ptr<sACNSocket> m_socket;
+    std::unique_ptr<sACNReceiverSocket> m_socket;
     sACNPacket m_tempPacket;
+    DMXUniverseData m_universeValues;
 };
