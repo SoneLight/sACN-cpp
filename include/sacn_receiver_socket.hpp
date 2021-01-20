@@ -24,6 +24,17 @@ class sACNReceiverSocket
         bool start()
         {
             try
+            {
+                socket->open(asio::ip::udp::v4());
+                Logger::Log(LogLevel::Info, "Openend socket.");
+            }
+            catch(const std::exception& e)
+            {
+                Logger::Log(LogLevel::Critical, "Could not open socket! " + std::string(e.what()));
+                return false;
+            }
+
+            try
             {               
                 if(m_interface == "")
                     socket->bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), 5568));

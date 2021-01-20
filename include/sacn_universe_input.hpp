@@ -14,9 +14,9 @@ namespace sACNcpp {
 class sACNUniverseInput {
 
 public:
-    sACNUniverseInput(uint16_t universe, std::string networkInterface, std::shared_ptr<asio::io_context> io_context)
+    sACNUniverseInput(uint16_t universe, std::shared_ptr<asio::io_context> io_context, std::string networkInterface="")
     {
-        m_socket = std::make_unique<sACNReceiverSocket>(universe, networkInterface, io_context);
+        m_socket = std::make_unique<sACNReceiverSocket>(universe, io_context, networkInterface);
     }
 
     void start()
@@ -46,7 +46,7 @@ public:
         return "None";
     }
 
-    const DMXUniverseData& dmx() const
+    DMXUniverseData& dmx()
     {
         return m_universeValues;
     }

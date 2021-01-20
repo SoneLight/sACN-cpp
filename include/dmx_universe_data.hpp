@@ -1,6 +1,8 @@
 #pragma once
 #include <array>
 #include <shared_mutex>
+#include <iostream>
+#include <iomanip>
 
 namespace sACNcpp {
 
@@ -60,6 +62,25 @@ public:
     void setUnchanged()
     {
         m_changed.store(false);
+    }
+
+    void print()
+    {
+        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+        std::cout << "---------------------------------" << std::endl;
+        for(int i = 0; i < 32; i++)
+        {
+            std::cout << std::setw(3) << i*16 << " | ";
+            for(int j = 0; j < 16; j++)
+            {
+                uint16_t channel = i*16+j;
+
+                std::cout << std::setw(3) << (int)m_data[channel] << " ";
+            }
+
+            std::cout << std::endl;
+        }
+        std::cout << "---------------------------------" << std::endl;
     }
 
 private:

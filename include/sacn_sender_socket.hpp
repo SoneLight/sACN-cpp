@@ -20,6 +20,18 @@ class sACNSenderSocket
 
         bool start()
         {
+               
+            try
+            {
+                socket->open(asio::ip::udp::v4());
+                Logger::Log(LogLevel::Info, "Openend socket.");
+            }
+            catch(const std::exception& e)
+            {
+                Logger::Log(LogLevel::Critical, "Could not open socket! " + std::string(e.what()));
+                return false;
+            }
+            
             if(m_interface != "")
             {
                 try
@@ -32,17 +44,6 @@ class sACNSenderSocket
                     Logger::Log(LogLevel::Critical, "Could not bind socket! " + std::string(e.what()));
                     return false;
                 }                
-            }
-                
-            try
-            {
-                socket->open(asio::ip::udp::v4());
-                Logger::Log(LogLevel::Info, "Openend socket.");
-            }
-            catch(const std::exception& e)
-            {
-                Logger::Log(LogLevel::Critical, "Could not open socket! " + std::string(e.what()));
-                return false;
             }
             
             return true;
