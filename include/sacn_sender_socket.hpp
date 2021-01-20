@@ -10,14 +10,31 @@
 
 namespace sACNcpp {
 
+/**
+ * @brief A wrapper around an asio::ip::udp::socket for sending sACN.
+ * 
+ */
 class sACNSenderSocket
 {
     public:
+
+        /**
+         * @brief Construct a new sACNSenderSocket object
+         * 
+         * @param context the asio context to use to construct the asio::ip::udp::socket
+         * @param interface the interface to use to send sACN from. if empty, the default interface will be used.
+         */
         sACNSenderSocket(std::shared_ptr<asio::io_context> context, std::string interface="") : m_interface(interface)
         {
             socket = std::make_unique<asio::ip::udp::socket>(*context);            
         }
 
+        /**
+         * @brief prepares the socket for sending sacn
+         * 
+         * @return true creation of the socket successfull
+         * @return false an error occurred, check logs
+         */
         bool start()
         {
                
@@ -49,8 +66,17 @@ class sACNSenderSocket
             return true;
         }
 
-        bool sendPacketMulticast(const sACNPacket& packet, uint16_t universe)
+        /**
+         * @brief Sends a sACN packet to the multicast address corresponding to the universe
+         * set in the packet.
+         * 
+         * @param packet the packet to send.
+         * @return true the packet was successfully sent
+         * @return false an error occurred while sending the packet
+         */
+        bool sendPacketMulticast(const sACNPacket& packet)
         {
+            uint16_t universe = packet.universe();
             asio::ip::udp::endpoint endpoint(asio::ip::make_address_v4(0xefff0000 | universe), 5568);
 
             try
@@ -66,6 +92,16 @@ class sACNSenderSocket
             return true;           
         }
 
+        /**
+         * @brief Sends a sACN packet to the hostname and port provided. If no port is provided, the 
+         * default port for sACN (5568) is used.
+         * 
+         * @param packet the packet to send
+         * @param hostname the hostname to send to
+         * @param port the port to send to, or 5568, if none is provided
+         * @return true packet sent successfully
+         * @return false an error occurred while sending the packet
+         */
         bool sendPacketUnicast(const sACNPacket& packet, std::string hostname, uint16_t port=5568)
         {
             asio::ip::udp::endpoint endpoint(asio::ip::make_address(hostname), port);
@@ -83,7 +119,16 @@ class sACNSenderSocket
         }
 
     private:
+        /**
+         * @brief the socket sent to send packets
+         * 
+         */
         std::unique_ptr<asio::ip::udp::socket> socket;
+
+        /**
+         * @brief the interface to use to send packets
+         * 
+         */
         std::string m_interface;
 };
 }

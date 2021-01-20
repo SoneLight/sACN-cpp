@@ -7,6 +7,10 @@
 
 namespace sACNcpp 
 {
+    /**
+     * @brief Log level to use
+     * 
+     */
     enum LogLevel
     {
         Debug = 0,
@@ -15,12 +19,20 @@ namespace sACNcpp
         Critical
     };
 
+    /**
+     * @brief An interface for all loggers
+     * 
+     */
     class LogInterface
     {
         public:
             virtual void Log(LogLevel loglevel, std::string text) = 0;
     };
 
+    /**
+     * @brief A default (ostream) logger implementing the LogInterface
+     * 
+     */
     class DefaultLogger : public LogInterface
     {
         public:
@@ -53,10 +65,22 @@ namespace sACNcpp
 
     };
 
+    /**
+     * @brief The static logger used in this package.
+     * 
+     * You can set you own logger implementing the LogInterface
+     * using the setLogger method.
+     */
     class Logger
     {
         public:
 
+            /**
+             * @brief Log the log entry to the currently set logging handler.
+             * 
+             * @param loglevel loglevel of the entry
+             * @param text text of the entry
+             */
             static void Log(LogLevel loglevel, std::string text)
             {
                 if(getLogHandlerRef() == nullptr)
@@ -65,6 +89,11 @@ namespace sACNcpp
                 getLogHandlerRef()->Log(loglevel, text);
             }
 
+            /**
+             * @brief Set the Logger to use
+             * 
+             * @param logger Logger to use, implementing LogInterface
+             */
             static void setLogger(LogInterface* logger)
             {
                 if(getLogHandlerRef != nullptr)
@@ -72,6 +101,13 @@ namespace sACNcpp
                 getLogHandlerRef() = logger;                
             }
 
+        private:
+
+            /**
+             * @brief Used to statically store the Logging handler
+             * 
+             * @return LogInterface*& 
+             */
             static LogInterface*& getLogHandlerRef()
             {
                 static DefaultLogger defaultLogger;
