@@ -9,17 +9,22 @@
 #include <chrono>
 #include <array>
 
+namespace sACNcpp {
+
 class sACNUniverseInput {
 
 public:
     sACNUniverseInput(uint16_t universe, std::string networkInterface, std::shared_ptr<asio::io_context> io_context)
     {
-        m_socket = std::make_unique<sACNReceiverSocket>(networkInterface, io_context);
+        m_socket = std::make_unique<sACNReceiverSocket>(universe, networkInterface, io_context);
     }
 
     void start()
     {
         if(m_running.load())
+            return;
+
+        if(m_socket->start())
             return;
 
         m_running.store(true);
@@ -70,3 +75,4 @@ private:
     sACNPacket m_tempPacket;
     DMXUniverseData m_universeValues;
 };
+}

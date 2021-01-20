@@ -6,7 +6,7 @@
 int main()
 {
     std::shared_ptr<asio::io_context> iocontext= std::make_shared<asio::io_context>();
-    sACNUniverseOutput output(2, "sACN-cpp", iocontext);
+    sACNcpp::sACNUniverseOutput output(2, "sACN-cpp", iocontext);
 
     for(int i = 0; i < 512; i++)
     {

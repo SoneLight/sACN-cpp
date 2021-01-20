@@ -9,6 +9,8 @@
 #include <chrono>
 #include <array>
 
+namespace sACNcpp {
+
 class sACNUniverseOutput {
 
 public:
@@ -28,6 +30,9 @@ public:
     void start()
     {
         if(m_running.load())
+            return;
+
+        if(!m_socket->start())
             return;
 
         m_running.store(true);
@@ -78,3 +83,4 @@ private:
     DMXUniverseData m_universeValues;
 
 };
+}

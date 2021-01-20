@@ -2,6 +2,8 @@
 #include <array>
 #include <shared_mutex>
 
+namespace sACNcpp {
+
 class DMXUniverseData {
     /**
      * @brief A wrapper around a std::array providing 
@@ -66,3 +68,5 @@ private:
     std::shared_timed_mutex m_mutex;
     std::atomic_bool m_changed;
 };
+
+}

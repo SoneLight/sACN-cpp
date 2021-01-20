@@ -13,6 +13,8 @@
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop))
 #endif
 
+namespace sACNcpp {
+
 /* E1.31 Public Constants */
 const uint16_t E131_DEFAULT_PORT = 5568;
 const uint8_t E131_DEFAULT_PRIORITY = 100;
@@ -217,3 +219,5 @@ class sACNPacket
         sacn_packet_struct* packedPacket;
         
 };
+
+}
