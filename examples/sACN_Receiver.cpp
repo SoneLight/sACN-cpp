@@ -1,18 +1,21 @@
-#include <sacn_universe_input.hpp>
+#include <sacn_input.hpp>
 #include <asio_standalone_or_boost.hpp>
 #include <thread>
 #include <chrono>
 
 int main()
 {
-    std::shared_ptr<asio::io_context> iocontext= std::make_shared<asio::io_context>();
-    sACNcpp::sACNUniverseInput input(2, iocontext);
+    sACNcpp::sACNInput input(nullptr, "192.168.10.107");
 
-    input.start();
+    if(!input.start())
+        exit(1);
+
+    if(!input.addUniverse(1))
+        exit(1);
 
     while(1)
     {
-        input.dmx().print();
+        input[1]->dmx().print();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

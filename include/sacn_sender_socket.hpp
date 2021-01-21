@@ -32,7 +32,7 @@ class sACNSenderSocket
         /**
          * @brief prepares the socket for sending sacn
          * 
-         * @return true creation of the socket successfull
+         * @return true creation of the socket successful
          * @return false an error occurred, check logs
          */
         bool start()
@@ -53,7 +53,7 @@ class sACNSenderSocket
             {
                 try
                 {
-                    socket->bind(asio::ip::udp::endpoint(asio::ip::make_address(m_interface), 5569));
+                    socket->bind(asio::ip::udp::endpoint(asio::ip::make_address(m_interface), 5567));
                     Logger::Log(LogLevel::Info, "Bound socket to interface " + m_interface);
                 }
                 catch(const std::exception& e)

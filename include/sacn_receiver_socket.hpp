@@ -20,12 +20,11 @@ class sACNReceiverSocket
         /**
          * @brief Construct a new sACNReceiverSocket object
          * 
-         * @param universe the universe to receive. this determines which multicast group will be joined
          * @param context the asio::io_context to use
          * @param interface the interface to bind to. if empty, the default interface will be used.
          */
-        sACNReceiverSocket(uint16_t universe, std::shared_ptr<asio::io_context> context, std::string interface = "") : 
-            m_interface(interface), m_universe(universe)
+        sACNReceiverSocket(std::shared_ptr<asio::io_context> context, std::string interface = "") : 
+            m_interface(interface)
         {
             socket = std::make_unique<asio::ip::udp::socket>(*context);
         }
@@ -65,21 +64,29 @@ class sACNReceiverSocket
                 return false;
             }
 
+            return true;
+        }
+
+        bool joinUniverse(uint16_t universe)
+        {
             try
             {
-                socket->set_option(asio::ip::multicast::join_group(
-                    asio::ip::make_address_v4(0xefff0000 | m_universe), 
-                    asio::ip::make_address_v4(m_interface)));
+                if(m_interface == "")
+                    socket->set_option(asio::ip::multicast::join_group(
+                        asio::ip::make_address_v4(0xefff0000 | universe)));
+                else
+                    socket->set_option(asio::ip::multicast::join_group(
+                        asio::ip::make_address_v4(0xefff0000 | universe), 
+                        asio::ip::make_address_v4(m_interface)));
 
-                Logger::Log(LogLevel::Info, "Joined multicast group for universe " + m_universe);
+                Logger::Log(LogLevel::Info, "Joined multicast group for universe " + std::to_string(universe));
             }
             catch(const std::exception& e)
             {                
                 Logger::Log(LogLevel::Critical, "Could not join multicast group! " + std::string(e.what()));
                 return false;
-            }           
-
-            return true;
+            }  
+            return true;        
         }
 
         /**
