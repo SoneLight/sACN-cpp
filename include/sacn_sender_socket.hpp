@@ -53,7 +53,7 @@ class sACNSenderSocket
             {
                 try
                 {
-                    socket->bind(asio::ip::udp::endpoint(asio::ip::make_address(m_interface), 5567));
+                    socket->bind(asio::ip::udp::endpoint(asio::ip::make_address(m_interface), 34567));
                     Logger::Log(LogLevel::Info, "Bound socket to interface " + m_interface);
                 }
                 catch(const std::exception& e)

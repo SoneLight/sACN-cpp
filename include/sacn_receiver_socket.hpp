@@ -41,7 +41,7 @@ class sACNReceiverSocket
             try
             {
                 socket->open(asio::ip::udp::v4());
-                Logger::Log(LogLevel::Info, "Openend socket.");
+                Logger::Log(LogLevel::Info, "Opened socket.");
             }
             catch(const std::exception& e)
             {
@@ -51,12 +51,9 @@ class sACNReceiverSocket
 
             try
             {               
-                if(m_interface == "")
-                    socket->bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), 5568));
-                else
-                    socket->bind(asio::ip::udp::endpoint(asio::ip::make_address(m_interface), 5568));
+                socket->bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), 5568));
                 
-                Logger::Log(LogLevel::Info, "Bound socket to interface " + m_interface);
+                Logger::Log(LogLevel::Info, "Bound socket.");
             }
             catch(const std::exception& e)
             {
@@ -118,7 +115,7 @@ class sACNReceiverSocket
                 Logger::Log(LogLevel::Warning, "Exception while receiving packet! " + std::string(e.what()));
                 return false;
             }       
-            Logger::Log(LogLevel::Debug, "Received new packet for universe " + m_universe);    
+            Logger::Log(LogLevel::Debug, "Received new packet.");    
             return true;
         }
 

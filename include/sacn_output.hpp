@@ -101,6 +101,9 @@ public:
             return false;
 
         m_universes.emplace(universe, new sACNUniverseOutput(universe, m_unchangedRefreshRate));
+        m_universeIDs.push_back(universe);
+
+        Logger::Log(LogLevel::Info, "Added output for universe " + std::to_string(universe));
 
         return true;
     }

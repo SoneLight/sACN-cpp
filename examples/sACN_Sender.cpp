@@ -5,7 +5,7 @@
 
 int main()
 {
-    sACNcpp::sACNOutput output("sACN-cpp", nullptr, 5, "192.168.10.107");
+    sACNcpp::sACNOutput output("sACN-cpp", nullptr, 5, "192.168.188.71");
 
     if(!output.start())
         exit(1);
@@ -13,10 +13,11 @@ int main()
     if(!output.addUniverse(1))
         exit(1);
 
-    for(int i = 0; i < 512; i++)
-    {
-        output[1]->dmx().set(i,i);
-    }
+    output[1]->dmx().set(2,255);
 
-    while(1) std::this_thread::sleep_for(std::chrono::seconds(5));
+    while(1) 
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        output[1]->dmx().set(1,output[1]->dmx()[1]+1);
+    }
 }

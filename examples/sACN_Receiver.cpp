@@ -5,7 +5,7 @@
 
 int main()
 {
-    sACNcpp::sACNInput input(nullptr, "192.168.10.107");
+    sACNcpp::sACNInput input(nullptr, "192.168.188.71");
 
     if(!input.start())
         exit(1);
@@ -15,7 +15,7 @@ int main()
 
     while(1)
     {
-        input[1]->dmx().print();
+        //input[1]->dmx().print();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

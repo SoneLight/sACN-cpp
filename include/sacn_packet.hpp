@@ -99,6 +99,7 @@ class sACNPacket
             packedPacket->root.postamble_size = htons(_E131_POSTAMBLE_SIZE);
             memcpy(packedPacket->root.acn_pid, _E131_ACN_PID, sizeof packedPacket->root.acn_pid);
             packedPacket->root.vector = htonl(_E131_ROOT_VECTOR);
+            //packedPacket->root.cid = {0x41, 0x53, 0x43, 0x2d, 0x45, 0x31, 0x2e, 0x31, 0x67, 0x65, 0x37, 0x00, 0x00, 0x00, 0x47, 0x55};
 
             // set Framing Layer values 
             packedPacket->frame.vector = htonl(_E131_FRAME_VECTOR);
@@ -183,6 +184,16 @@ class sACNPacket
             return packedPacket; 
         }
 
+        uint8_t sequenceNumber() const
+        {
+            return packedPacket->frame.seq_number;
+        }
+
+        void setSequenceNumber(uint8_t value)
+        {
+            packedPacket->frame.seq_number = value;
+        }
+
         /**
          * @brief gets a dmx channel value stored in this packet
          * 
@@ -212,7 +223,7 @@ class sACNPacket
          */
         void getDMXDataCopy(DMXUniverseData& result) const
         {
-            result.read(&packedPacket->dmp.prop_val[1], numDMXSlots());            
+            result.read(packedPacket->dmp.prop_val, numDMXSlots());            
         }
 
         /**
@@ -223,7 +234,7 @@ class sACNPacket
         void setDMXDataCopy(DMXUniverseData& data)
         {
             setNumDMXSlots(512);
-            data.write(&packedPacket->dmp.prop_val[1], 512);
+            data.write(packedPacket->dmp.prop_val, 512);
         }
 
         /**

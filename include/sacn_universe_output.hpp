@@ -64,6 +64,9 @@ public:
         {
             dataPacket.setDMXDataCopy(m_universeValues);
             dataPacket.setUniverse(m_universe);
+            dataPacket.setSequenceNumber(m_sequenceNumber);
+
+            m_sequenceNumber++;
 
             m_universeValues.setUnchanged();
             m_lastPacket = std::chrono::high_resolution_clock::now();
@@ -93,6 +96,8 @@ private:
      * 
      */
     uint16_t m_unchangedRefreshRate;
+
+    uint8_t m_sequenceNumber = 0;
 
     /**
      * @brief The values to send
