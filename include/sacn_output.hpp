@@ -24,12 +24,10 @@ public:
     /**
      * @brief Construct a new sACNOutput object
      * 
-     * @param sourceName the sourceName this sACN sender should appear as
      * @param io_context the asio iocontext object to use for the underlying socket, optional
      * @param unchangedRefreshRate the refresh rate to send packets when no changes are made to the DMXUniverseData class
      */
     sACNOutput( 
-        std::string sourceName,
         std::shared_ptr<asio::io_context> io_context = nullptr, 
         uint16_t unchangedRefreshRate=5) :
         m_iocontext(io_context),
@@ -38,7 +36,7 @@ public:
         if(!m_iocontext)
             m_iocontext = std::make_shared<asio::io_context>();
 
-        m_tempPacket.setSourceName(sourceName);
+        m_tempPacket.setSourceName("sACN-cpp");
         m_running.store(false);
     }
 
@@ -52,12 +50,23 @@ public:
     }
 
     /**
+     * @brief Set the source this sACN sender should appear as
+     * 
+     * @param sourceName the sourceName this sACN sender should appear as
+     */
+    void setSourceName(const std::string& sourceName)
+    {
+        std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
+        m_tempPacket.setSourceName(sourceName);
+    }
+
+    /**
      * @brief Starts execution of the sender. This will spawn an additional thread to send sACN in the background.
      * @param networkInterface The network interface to use. If none is provided, some interface/the default will be chosen. 
      * @return true: creation of the socket was successful
      * @return false: there was an error constructing the socket
      */
-    bool start(std::string networkInterface="")
+    bool start()
     {
         if(m_running.load())
             return false;
@@ -66,7 +75,7 @@ public:
             return false;
 
         
-        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
+        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, m_networkInterface);
         m_running.store(true);
         m_thread = std::thread([this]() {this->run(); });
 
@@ -109,7 +118,7 @@ public:
     }
 
     /**
-     * @brief gets a reference to the universe with the given id. If this universe was not intialized on this object with addUniverse(), an exception will be thrown.
+     * @brief gets a pointer to the universe with the given id. If this universe was not intialized on this object with addUniverse(), an exception will be thrown.
      * 
      * @throw std::out_of_range exception if the universe with id universe was not first added to the input with addUnvierse()
      * @param universe the id of the universe to get
@@ -207,6 +216,10 @@ private:
      * 
      */
     sACNPacket m_tempPacket;
+
+    std::string m_networkInterface="";
+
+    
 
 };
 }

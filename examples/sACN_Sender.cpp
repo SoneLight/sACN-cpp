@@ -5,7 +5,7 @@
 
 int main()
 {
-    sACNcpp::sACNOutput output("sACN-cpp");
+    sACNcpp::sACNOutput output;
 
     if(!output.start())
         exit(1);
