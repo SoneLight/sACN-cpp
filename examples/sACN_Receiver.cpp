@@ -1,4 +1,4 @@
-#include <sacn_input.hpp>
+#include <sacn-cpp.hpp>
 #include <asio_standalone_or_boost.hpp>
 #include <thread>
 #include <chrono>
