@@ -114,8 +114,7 @@ class sACNReceiverSocket
             {                
                 Logger::Log(LogLevel::Warning, "Exception while receiving packet! " + std::string(e.what()));
                 return false;
-            }       
-            Logger::Log(LogLevel::Debug, "Received new packet.");    
+            }         
             return true;
         }
 

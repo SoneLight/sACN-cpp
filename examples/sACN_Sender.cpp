@@ -5,7 +5,7 @@
 
 int main()
 {
-    sACNcpp::sACNOutput output("sACN-cpp", nullptr, 5, "192.168.188.71");
+    sACNcpp::sACNOutput output("sACN-cpp");
 
     if(!output.start())
         exit(1);

@@ -133,18 +133,21 @@ private:
                     Logger::Log(LogLevel::Warning, "Received invalid packet!");
                     continue;
                 }
-
+                int universe = m_tempPacket.universe();
                 {
                     std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
 
-                    auto it = m_universes.find(m_tempPacket.universe());
+                    auto it = m_universes.find(universe);
                     
                     if(it == m_universes.end())
                         continue;
                     
                     else
-                        m_universes.at(m_tempPacket.universe())->handleNewPacket(m_tempPacket);     
-                }               
+                    {
+                        m_universes.at(universe)->handleNewPacket(m_tempPacket); 
+                    }    
+                }    
+                Logger::Log(LogLevel::Debug, "Universe " + std::to_string(universe) + " received new packet.");             
 
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(5));

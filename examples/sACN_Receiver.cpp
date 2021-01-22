@@ -5,12 +5,15 @@
 
 int main()
 {
-    sACNcpp::sACNInput input(nullptr, "192.168.188.71");
+    sACNcpp::sACNInput input;
 
     if(!input.start())
         exit(1);
 
     if(!input.addUniverse(1))
+        exit(1);
+
+    if(!input.addUniverse(2))
         exit(1);
 
     while(1)
