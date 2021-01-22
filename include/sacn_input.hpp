@@ -27,13 +27,11 @@ public:
      * @brief Construct a new sACNInput object.
      * 
      * @param io_context the asio iocontext object to use for the underlying socket (optional)
-     * @param networkInterface the network interface to bind to.
      */
-    sACNInput(std::shared_ptr<asio::io_context> io_context=nullptr, std::string networkInterface="") : m_iocontext(io_context)
+    sACNInput(std::shared_ptr<asio::io_context> io_context=nullptr) : m_iocontext(io_context)
     {
         if(!m_iocontext)
             m_iocontext = std::make_unique<asio::io_context>();
-        m_socket = std::make_unique<sACNReceiverSocket>(m_iocontext, networkInterface);
         m_running.store(false);
     }
 
@@ -48,13 +46,16 @@ public:
 
     /**
      * @brief Starts execution of the receiver. This will spawn an additional thread to receive sACN in the background.
+     * @param networkInterface the network interface to bind to. if empty, the default interface will be chosen
      * @return true: creation of the socket was successful
      * @return false: there was an error constructing the socket
      */
-    bool start()
+    bool start(std::string networkInterface="")
     {
         if(m_running.load())
             return false;
+
+        m_socket = std::make_unique<sACNReceiverSocket>(m_iocontext, networkInterface);
 
         if(!m_socket->start())
             return false;

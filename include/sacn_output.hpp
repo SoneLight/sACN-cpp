@@ -27,20 +27,17 @@ public:
      * @param sourceName the sourceName this sACN sender should appear as
      * @param io_context the asio iocontext object to use for the underlying socket, optional
      * @param unchangedRefreshRate the refresh rate to send packets when no changes are made to the DMXUniverseData class
-     * @param networkInterface The network interface to use. If none is provided, some interface/the default will be chosen. 
      */
     sACNOutput( 
         std::string sourceName,
         std::shared_ptr<asio::io_context> io_context = nullptr, 
-        uint16_t unchangedRefreshRate=5, 
-        std::string networkInterface="") :
+        uint16_t unchangedRefreshRate=5) :
         m_iocontext(io_context),
         m_unchangedRefreshRate(unchangedRefreshRate)
     {       
         if(!m_iocontext)
             m_iocontext = std::make_shared<asio::io_context>();
 
-        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
         m_tempPacket.setSourceName(sourceName);
         m_running.store(false);
     }
@@ -56,10 +53,11 @@ public:
 
     /**
      * @brief Starts execution of the sender. This will spawn an additional thread to send sACN in the background.
+     * @param networkInterface The network interface to use. If none is provided, some interface/the default will be chosen. 
      * @return true: creation of the socket was successful
      * @return false: there was an error constructing the socket
      */
-    bool start()
+    bool start(std::string networkInterface="")
     {
         if(m_running.load())
             return false;
@@ -67,6 +65,8 @@ public:
         if(!m_socket->start())
             return false;
 
+        
+        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
         m_running.store(true);
         m_thread = std::thread([this]() {this->run(); });
 
