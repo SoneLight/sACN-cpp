@@ -66,7 +66,7 @@ public:
      * @return true: creation of the socket was successful
      * @return false: there was an error constructing the socket
      */
-    bool start()
+    bool start(std::string networkInterface="")
     {
         if(m_running.load())
             return false;
@@ -75,7 +75,7 @@ public:
             return false;
 
         
-        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, m_networkInterface);
+        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
         m_running.store(true);
         m_thread = std::thread([this]() {this->run(); });
 
@@ -215,11 +215,7 @@ private:
      * The data will be copied to this packet before sending.
      * 
      */
-    sACNPacket m_tempPacket;
-
-    std::string m_networkInterface="";
-
-    
+    sACNPacket m_tempPacket;    
 
 };
 }
