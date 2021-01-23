@@ -3,6 +3,7 @@
 #include <shared_mutex>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 
 namespace sACNcpp {
 
@@ -55,6 +56,67 @@ public:
         for(uint16_t i = 0; i < length; i++)
         {
             data[i] = m_data[i];
+        }
+    }
+
+    /**
+     * @brief copies the contents of this DMXUniverseData to an other instance
+     * 
+     * @param target the instance to copy to
+     */
+    void copyTo(DMXUniverseData& target)
+    {
+        {
+            std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+            std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
+
+            for(uint16_t i = 0; i < 512; i++)
+            {
+                target.m_data[i] = m_data[i];
+            }
+        }
+
+        target.m_changed.store(true);
+    }
+
+    /**
+     * @brief Reads a multichannel dmx value (fine/ultra/.. resolution) from this packet.
+     * 
+     * @param channel the first channel the value will be read from
+     * @param resolution the resolution of the value. should be greater than 0, 1 equals operator[].
+     * @return double, will be between 0 and 1
+     */
+    double readVariableResolutionValue(uint16_t channel, uint8_t resolution)
+    {
+        if(channel+resolution > 512)
+            throw std::out_of_range("channel+resolution would read from channel > 512");
+
+        double rawValue = 0;
+        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+        for(uint8_t i = 1; i <= resolution; i++)
+        {
+            rawValue += m_data[channel+i]/pow(256, i);
+        }
+    }
+
+    /**
+     * @brief Writes a multichannel dmx value (fine/ultra/.. resolution) to this packet.
+     * 
+     * @param value the value to write. should be between 0 and 1.
+     * @param channel the first channel the value should be written to
+     * @param resolution the resolution to write the value in. should be greater than 0, 1 equals set().
+     */
+    void writeVariableResolutionValue(double value, uint16_t channel, uint8_t resolution)
+    {
+        if(channel+resolution > 512)
+            throw std::out_of_range("channel+resolution would write to channel > 512");
+
+        double val = value;
+        std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
+        for(uint8_t i = 1; i <= resolution; i++)
+        {
+            m_data[channel+i] = (int)floor(value/pow(256,i));
+            value = fmod(value, 1/pow(256,i));
         }
     }
 

@@ -8,6 +8,7 @@
 #include <memory>
 #include <chrono>
 #include <array>
+#include <set>
 #include <shared_mutex>
 
 namespace sACNcpp {
@@ -84,21 +85,38 @@ public:
      * 
      * @param universe the universe to listen to
      * @return true: creation of the socket receiver was successful
-     * @return false: there was an error joing the multicast group
+     * @return false: there was an error joining the multicast group, or the universe was already registered
      */
     bool addUniverse(const uint16_t& universe)
     {
-        std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex); 
-
-        if(m_universes.find(universe) != m_universes.end())
+        if(hasUniverse(universe))
             return false;
 
         if(!m_socket->joinUniverse(universe))
             return false;
 
-        m_universes.emplace(universe, new sACNUniverseInput());
+        {
+            std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex); 
+            m_universes.emplace(universe, new sACNUniverseInput());
+        }
+
+        {
+            std::lock_guard<std::shared_timed_mutex> writeLockID(m_IDmutex); 
+            m_universeIDs.insert(universe);
+        }
 
         return true;
+    }
+
+    /**
+     * @brief Returns if a universe was already registered
+     * 
+     * @param universe the universe in question
+     */
+    bool hasUniverse(const uint16_t& universe)
+    {
+        std::shared_lock<std::shared_timed_mutex> readLock(m_IDmutex);
+        return m_universeIDs.count(universe) != 0;
     }
 
     /**
@@ -109,6 +127,18 @@ public:
      * @return sACNUniverseInput* a pointer to the universe
      */
     sACNUniverseInput* operator[](const uint16_t& universe)
+    {            
+        return this->at(universe);
+    }
+
+    /**
+     * @brief gets a pointer to the universe with the given id. If this universe was not intialized on this object with addUniverse(), an exception will be thrown.
+     * 
+     * @throw std::out_of_range exception if the universe with id universe was not first added to the input with addUnvierse()
+     * @param universe the id of the universe to get
+     * @return sACNUniverseInput* a pointer to the universe
+     */
+    sACNUniverseInput* at(const uint16_t& universe)
     {
         std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);                
         return m_universes.at(universe);
@@ -154,6 +184,18 @@ private:
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
+
+    /**
+     * @brief the universes to send to
+     * 
+     */
+    std::set<uint16_t> m_universeIDs;
+
+    /**
+     * @brief A mutex protecting m_universeIDs
+     * 
+     */
+    std::shared_timed_mutex m_IDmutex;
     
     /**
      * @brief the thread running the run method and so, the receiving thread

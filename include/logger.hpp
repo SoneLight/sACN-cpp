@@ -96,8 +96,6 @@ namespace sACNcpp
              */
             static void setLogger(LogInterface* logger)
             {
-                if(getLogHandlerRef != nullptr)
-                    delete getLogHandlerRef();
                 getLogHandlerRef() = logger;                
             }
 

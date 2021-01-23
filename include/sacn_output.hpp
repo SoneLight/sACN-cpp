@@ -71,11 +71,11 @@ public:
         if(m_running.load())
             return false;
 
+        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
+
         if(!m_socket->start())
             return false;
-
         
-        m_socket = std::make_unique<sACNSenderSocket>(m_iocontext, networkInterface);
         m_running.store(true);
         m_thread = std::thread([this]() {this->run(); });
 
@@ -103,18 +103,34 @@ public:
      * @return false: the universe sender was already constructed
      */
     bool addUniverse(const uint16_t& universe)
-    {
-        std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex); 
-
-        if(m_universes.find(universe) != m_universes.end())
+    {        
+        if(hasUniverse(universe))
             return false;
 
-        m_universes.emplace(universe, new sACNUniverseOutput(universe, m_unchangedRefreshRate));
-        m_universeIDs.push_back(universe);
+        {
+            std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex); 
+            m_universes.emplace(universe, new sACNUniverseOutput(universe, m_unchangedRefreshRate));
+        }
+
+        {
+            std::lock_guard<std::shared_timed_mutex> writeLock(m_IDmutex);
+            m_universeIDs.insert(universe);
+        }
 
         Logger::Log(LogLevel::Info, "Added output for universe " + std::to_string(universe));
 
         return true;
+    }
+
+    /**
+     * @brief Returns if a universe was already registered
+     * 
+     * @param universe the universe in question
+     */
+    bool hasUniverse(const uint16_t& universe)
+    {
+        std::shared_lock<std::shared_timed_mutex> readLock(m_IDmutex);
+        return m_universeIDs.count(universe) != 0;
     }
 
     /**
@@ -125,10 +141,23 @@ public:
      * @return sACNUniverseOutput* a pointer to the universe
      */
     sACNUniverseOutput* operator[](const uint16_t& universe)
+    {           
+        return this->at(universe);
+    }
+
+    /**
+     * @brief gets a pointer to the universe with the given id. If this universe was not intialized on this object with addUniverse(), an exception will be thrown.
+     * 
+     * @throw std::out_of_range exception if the universe with id universe was not first added to the input with addUnvierse()
+     * @param universe the id of the universe to get
+     * @return sACNUniverseOutput* a pointer to the universe
+     */
+    sACNUniverseOutput* at(const uint16_t& universe)
     {
         std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);                
         return m_universes.at(universe);
     }
+
 
 private:
 
@@ -142,6 +171,7 @@ private:
         {
             {
                 std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+                std::shared_lock<std::shared_timed_mutex> readIDLock(m_IDmutex);
 
                 for(uint16_t k : m_universeIDs)
                 {
@@ -160,7 +190,13 @@ private:
      * @brief the universes to send to
      * 
      */
-    std::vector<uint16_t> m_universeIDs;
+    std::set<uint16_t> m_universeIDs;
+
+    /**
+     * @brief A mutex protecting m_universeIDs
+     * 
+     */
+    std::shared_timed_mutex m_IDmutex;
 
     /**
      * @brief the universes objects
