@@ -97,6 +97,8 @@ public:
         {
             rawValue += m_data[channel+i]/pow(256, i);
         }
+
+        return rawValue;
     }
 
     /**
