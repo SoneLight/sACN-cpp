@@ -59,7 +59,7 @@ public:
      */
     bool getNewPacketData(sACNPacket& dataPacket)
     {
-        if(m_universeValues.changed() || 
+        if(m_universeValues != m_lastSentValues || 
             std::chrono::high_resolution_clock::now()-m_lastPacket > std::chrono::milliseconds(1000/m_unchangedRefreshRate))
         {
             dataPacket.setDMXDataCopy(m_universeValues);
@@ -68,7 +68,7 @@ public:
 
             m_sequenceNumber++;
 
-            m_universeValues.setUnchanged();
+            m_lastSentValues = m_universeValues;
             m_lastPacket = std::chrono::high_resolution_clock::now();
 
             return true;
@@ -104,6 +104,12 @@ private:
      * 
      */
     DMXUniverseData m_universeValues;
+
+    /**
+     * @brief The last dmx values of the last packet sent to network
+     * 
+     */
+    DMXUniverseData m_lastSentValues;
 
 };
 }

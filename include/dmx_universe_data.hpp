@@ -23,7 +23,6 @@ public:
     DMXUniverseData() 
     {
         m_data.fill(0);
-        m_changed.store(false);
     }
 
     /**
@@ -38,16 +37,9 @@ public:
         
         bool changed = false;     
         for(uint16_t i = 0; i < length; i++)
-        {
-            if(m_data[i] != data[i])
-            {
-                m_data[i] = data[i];
-                changed = true;
-            }
+        {            
+            m_data[i] = data[i];
         }
-
-        if(changed)
-            m_changed.store(true);   
     }
 
     /**
@@ -68,29 +60,21 @@ public:
     }
 
     /**
-     * @brief copies the contents of this DMXUniverseData to an other instance
+     * @brief copy assignment operator
      * 
-     * @param target the instance to copy to
+     * @param target the instance to copy
      */
-    void copyTo(DMXUniverseData& target)
+    DMXUniverseData& operator=(const DMXUniverseData& src)
     {
-        bool changed = false;
-        {
-            std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
-            std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
+        std::lock_guard<std::shared_timed_mutex> readLock(m_mutex);
+        std::shared_lock<std::shared_timed_mutex> writeLock(src.m_mutex);
 
-            for(uint16_t i = 0; i < 512; i++)
-            {
-                if(target.m_data[i] != m_data[i])
-                {
-                    target.m_data[i] = m_data[i];
-                    changed = true;
-                }
-            }
+        for(uint16_t i = 0; i < 512; i++)
+        {
+            m_data[i] = src.m_data[i];                
         }
 
-        if(changed)
-            target.m_changed.store(true);
+        return *this;
     }
 
     /**
@@ -133,12 +117,7 @@ public:
         {
             uint8_t newChannelValue = (int)floor(value/pow(256,i+1));
             value = fmod(value, 1/pow(256,i+1));
-
-            if(m_data[channel+i] != newChannelValue)
-            {
-                m_data[channel+i] = newChannelValue;
-                m_changed.store(true);
-            }
+            m_data[channel+i] = newChannelValue;
         }
     }
 
@@ -163,29 +142,37 @@ public:
     void set(uint16_t channel, uint8_t value)
     {
         std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
-        m_changed.store(true);
         m_data[channel] = value;
     }
 
     /**
-     * @brief returns if this instance contains data that was changed
-     * sind setUnchanged was last called.
+     * @brief eqality operator overload
      * 
-     * @return true new data available
-     * @return false nothing changed
+     * @param other the DMXUniverseData to compare to
+     * @return boolean indicating equlity 
      */
-    bool changed() const
+    bool operator==(const DMXUniverseData& other) const
     {
-        return m_changed.load();
-    }
+        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+        std::shared_lock<std::shared_timed_mutex> writeLock(other.m_mutex);
 
+        for(uint16_t i = 0; i < 512; i++)
+        {
+            if(other.m_data[i] != m_data[i])
+                return false;                
+        }
+        return true;
+    }
+    
     /**
-     * @brief Set the changed flag to false.
+     * @brief eqality operator overload
      * 
+     * @param other the DMXUniverseData to compare to
+     * @return boolean indicating equlity 
      */
-    void setUnchanged()
+    bool operator!=(const DMXUniverseData& other) const
     {
-        m_changed.store(false);
+        return !operator==(other);
     }
 
     /**
@@ -223,14 +210,8 @@ private:
      * @brief a mutex protecting the data array
      * 
      */
-    std::shared_timed_mutex m_mutex;
+    mutable std::shared_timed_mutex m_mutex;
 
-    /**
-     * @brief an atomic bool indicating this instance contains 
-     * data that changed since setUnchanged was last called 
-     * 
-     */
-    std::atomic_bool m_changed;
 };
 
 }
