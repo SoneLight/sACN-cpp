@@ -35,11 +35,19 @@ public:
     void read(const uint8_t * data, uint16_t length)
     {
         std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
-        m_changed.store(true);        
+        
+        bool changed = false;     
         for(uint16_t i = 0; i < length; i++)
         {
-            m_data[i] = data[i];
+            if(m_data[i] != data[i])
+            {
+                m_data[i] = data[i];
+                changed = true;
+            }
         }
+
+        if(changed)
+            m_changed.store(true);   
     }
 
     /**
@@ -66,17 +74,23 @@ public:
      */
     void copyTo(DMXUniverseData& target)
     {
+        bool changed = false;
         {
             std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
             std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
 
             for(uint16_t i = 0; i < 512; i++)
             {
-                target.m_data[i] = m_data[i];
+                if(target.m_data[i] != m_data[i])
+                {
+                    target.m_data[i] = m_data[i];
+                    changed = true;
+                }
             }
         }
 
-        target.m_changed.store(true);
+        if(changed)
+            target.m_changed.store(true);
     }
 
     /**
@@ -93,9 +107,9 @@ public:
 
         double rawValue = 0;
         std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
-        for(uint8_t i = 1; i <= resolution; i++)
+        for(uint8_t i = 0; i < resolution; i++)
         {
-            rawValue += m_data[channel+i]/pow(256, i);
+            rawValue += m_data[channel+i]/pow(256, i+1);
         }
 
         return rawValue;
@@ -115,10 +129,16 @@ public:
 
         double val = value;
         std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
-        for(uint8_t i = 1; i <= resolution; i++)
+        for(uint8_t i = 0; i < resolution; i++)
         {
-            m_data[channel+i] = (int)floor(value/pow(256,i));
-            value = fmod(value, 1/pow(256,i));
+            uint8_t newChannelValue = (int)floor(value/pow(256,i+1));
+            value = fmod(value, 1/pow(256,i+1));
+
+            if(m_data[channel+i] != newChannelValue)
+            {
+                m_data[channel+i] = newChannelValue;
+                m_changed.store(true);
+            }
         }
     }
 
