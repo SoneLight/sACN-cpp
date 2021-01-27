@@ -27,6 +27,7 @@ public:
      */
     sACNUniverseInput()
     {
+        m_lastPacket = std::chrono::high_resolution_clock::now() - std::chrono::seconds(100);
     }
   
     /**
@@ -60,8 +61,15 @@ public:
         {
             std::lock_guard<std::mutex> lk(m_mutex);
             m_currentSource = newPacket.sourceName();
+            m_lastPacket = std::chrono::high_resolution_clock::now();
         }
         newPacket.getDMXDataCopy(m_universeValues);
+    }
+
+    bool receivingData()
+    {
+        std::lock_guard<std::mutex> lk(m_mutex);
+        return std::chrono::high_resolution_clock::now()-m_lastPacket < std::chrono::seconds(2);
     }
 
 
@@ -78,6 +86,12 @@ private:
      * 
      */
     std::mutex m_mutex;
+
+    /**
+     * @brief the time point the last packet was received
+     * 
+     */
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastPacket;
 
     /**
      * @brief The source name of the sACN source of the last packet received.

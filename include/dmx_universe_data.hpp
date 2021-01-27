@@ -37,7 +37,7 @@ public:
         
         bool changed = false;     
         for(uint16_t i = 0; i < length; i++)
-        {
+        {            
             m_data[i] = data[i];
         }
     }
@@ -60,19 +60,21 @@ public:
     }
 
     /**
-     * @brief copies the contents of this DMXUniverseData to an other instance
+     * @brief copy assignment operator
      * 
-     * @param target the instance to copy to
+     * @param target the instance to copy
      */
-    void copyTo(DMXUniverseData& target)
+    DMXUniverseData& operator=(const DMXUniverseData& src)
     {
-        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
-        std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
+        std::lock_guard<std::shared_timed_mutex> readLock(m_mutex);
+        std::shared_lock<std::shared_timed_mutex> writeLock(src.m_mutex);
 
         for(uint16_t i = 0; i < 512; i++)
         {
-            target.m_data[i] = m_data[i];
+            m_data[i] = src.m_data[i];                
         }
+
+        return *this;
     }
 
     /**
@@ -144,6 +146,36 @@ public:
     }
 
     /**
+     * @brief eqality operator overload
+     * 
+     * @param other the DMXUniverseData to compare to
+     * @return boolean indicating equlity 
+     */
+    bool operator==(const DMXUniverseData& other) const
+    {
+        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+        std::shared_lock<std::shared_timed_mutex> writeLock(other.m_mutex);
+
+        for(uint16_t i = 0; i < 512; i++)
+        {
+            if(other.m_data[i] != m_data[i])
+                return false;                
+        }
+        return true;
+    }
+    
+    /**
+     * @brief eqality operator overload
+     * 
+     * @param other the DMXUniverseData to compare to
+     * @return boolean indicating equlity 
+     */
+    bool operator!=(const DMXUniverseData& other) const
+    {
+        return !operator==(other);
+    }
+
+    /**
      * @brief prints the stored dmx data to the console.
      * 
      */
@@ -178,7 +210,7 @@ private:
      * @brief a mutex protecting the data array
      * 
      */
-    std::shared_timed_mutex m_mutex;
+    mutable std::shared_timed_mutex m_mutex;
 
 };
 
