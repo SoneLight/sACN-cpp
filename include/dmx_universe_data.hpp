@@ -23,7 +23,6 @@ public:
     DMXUniverseData() 
     {
         m_data.fill(0);
-        m_changed.store(false);
     }
 
     /**
@@ -39,15 +38,8 @@ public:
         bool changed = false;     
         for(uint16_t i = 0; i < length; i++)
         {
-            if(m_data[i] != data[i])
-            {
-                m_data[i] = data[i];
-                changed = true;
-            }
+            m_data[i] = data[i];
         }
-
-        if(changed)
-            m_changed.store(true);   
     }
 
     /**
@@ -74,23 +66,13 @@ public:
      */
     void copyTo(DMXUniverseData& target)
     {
-        bool changed = false;
+        std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
+        std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
+
+        for(uint16_t i = 0; i < 512; i++)
         {
-            std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
-            std::lock_guard<std::shared_timed_mutex> writeLock(target.m_mutex);
-
-            for(uint16_t i = 0; i < 512; i++)
-            {
-                if(target.m_data[i] != m_data[i])
-                {
-                    target.m_data[i] = m_data[i];
-                    changed = true;
-                }
-            }
+            target.m_data[i] = m_data[i];
         }
-
-        if(changed)
-            target.m_changed.store(true);
     }
 
     /**
@@ -105,14 +87,14 @@ public:
         if(channel+resolution > 512)
             throw std::out_of_range("channel+resolution would read from channel > 512");
 
-        double rawValue = 0;
+        long rawValue = 0;
         std::shared_lock<std::shared_timed_mutex> readLock(m_mutex);
         for(uint8_t i = 0; i < resolution; i++)
         {
-            rawValue += m_data[channel+i]/pow(256, i+1);
+            rawValue += m_data[channel+resolution-i-1]*pow(256, i);
         }
 
-        return rawValue;
+        return rawValue / (pow(256, resolution)-1);
     }
 
     /**
@@ -127,18 +109,13 @@ public:
         if(channel+resolution > 512)
             throw std::out_of_range("channel+resolution would write to channel > 512");
 
-        double val = value;
+        long val = value * (pow(256, resolution)-1);
+
         std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
         for(uint8_t i = 0; i < resolution; i++)
         {
-            uint8_t newChannelValue = (int)floor(value/pow(256,i+1));
-            value = fmod(value, 1/pow(256,i+1));
-
-            if(m_data[channel+i] != newChannelValue)
-            {
-                m_data[channel+i] = newChannelValue;
-                m_changed.store(true);
-            }
+            m_data[channel+resolution-i-1] = val % 256;
+            val /= 256;
         }
     }
 
@@ -163,29 +140,7 @@ public:
     void set(uint16_t channel, uint8_t value)
     {
         std::lock_guard<std::shared_timed_mutex> writeLock(m_mutex);
-        m_changed.store(true);
         m_data[channel] = value;
-    }
-
-    /**
-     * @brief returns if this instance contains data that was changed
-     * sind setUnchanged was last called.
-     * 
-     * @return true new data available
-     * @return false nothing changed
-     */
-    bool changed() const
-    {
-        return m_changed.load();
-    }
-
-    /**
-     * @brief Set the changed flag to false.
-     * 
-     */
-    void setUnchanged()
-    {
-        m_changed.store(false);
     }
 
     /**
@@ -225,12 +180,6 @@ private:
      */
     std::shared_timed_mutex m_mutex;
 
-    /**
-     * @brief an atomic bool indicating this instance contains 
-     * data that changed since setUnchanged was last called 
-     * 
-     */
-    std::atomic_bool m_changed;
 };
 
 }
