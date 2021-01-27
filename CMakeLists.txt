@@ -21,7 +21,9 @@ add_executable(example-receiver examples/sACN_Receiver.cpp)
 # Add the cmake folder so the FindSphinx module is found
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-add_subdirectory(docs)
+if(NOT NODOCS)
+  add_subdirectory(docs)
+endif()
 
 
 ## Google Test
